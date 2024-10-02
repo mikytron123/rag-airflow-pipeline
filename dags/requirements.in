@@ -1,0 +1,7 @@
+weaviate-client
+llama-index-core
+llama-index-readers-file
+pandas
+apache-airflow==2.10.2
+httpx
+pydantic
