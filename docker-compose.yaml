@@ -50,7 +50,6 @@ x-airflow-common:
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-    # AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CELERY__BROKER_URL: amqp://celery:celery@rabbitmq:5672/celery_host
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -81,7 +80,7 @@ x-airflow-common:
 
 services:
   postgres:
-    image: postgres:13
+    image: postgres:latest
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -97,6 +96,11 @@ services:
 
   rabbitmq:
     image: rabbitmq:latest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
     environment:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: rabbitmq
@@ -241,19 +245,15 @@ services:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
   
   weaviate:
-    command:
-    - --host
-    - 0.0.0.0
-    - --port
-    - '8090'
-    - --scheme
-    - http
+    entrypoint: ["sh", "/entrypoint.sh"]
     image: cr.weaviate.io/semitechnologies/weaviate:1.25.4
     depends_on:
       - text-embeddings-inference
     ports:
     - "8090:8090"
     - "50051:50051"
+    volumes:
+      - ./weaviate/entrypoint.sh:/entrypoint.sh
     # volumes:
     # - weaviate_data:/var/lib/weaviate
     #    restart: on-failure:0
@@ -264,8 +264,7 @@ services:
       DEFAULT_VECTORIZER_MODULE: 'none'
       ENABLE_MODULES: ''
       CLUSTER_HOSTNAME: 'node1'
-      PROMETHEUS_MONITORING_ENABLED: 'true'
-
+    
   text-embeddings-inference:
     ports:
       - 8070:8070
