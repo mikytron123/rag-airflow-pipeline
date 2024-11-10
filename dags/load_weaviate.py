@@ -1,5 +1,6 @@
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import MarkdownNodeParser
+from llama_index.core.schema import MetadataMode
 import weaviate
 from teiembedding import TextEmbeddingsInference
 from llama_index.core.schema import Document
@@ -41,7 +42,7 @@ def load_weaviate():
         url = "https://docs.pola.rs/user-guide"
 
         for node in nodes:
-            meta = node.metadata | {"text": node.get_text()}
+            meta = node.metadata | {"text": node.get_content(MetadataMode.NONE)}
             file_path = node.metadata["file_path"]
             start_idx = file_path.find(word) + len(word)
             link = url + file_path[start_idx:-8]
